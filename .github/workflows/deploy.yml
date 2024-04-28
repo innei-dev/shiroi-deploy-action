@@ -41,9 +41,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: artifact
+          name: dist
           path: assets/release.zip
-          overwrite: true
           retention-days: 7
 
   deploy:
@@ -52,12 +51,12 @@ jobs:
     needs: build
     steps:
       - name: Download artifact
-        uses: dawidd6/action-download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          # name: artifact
-          github_token: ${{secrets.GH_PAT}}
-          search_artifacts: true
-          check_artifacts: true
+          name: dist
+          # github_token: ${{secrets.GH_PAT}}
+          # search_artifacts: true
+          # check_artifacts: true
       - name: copy file via ssh password
         uses: appleboy/scp-action@v0.1.7
         with:

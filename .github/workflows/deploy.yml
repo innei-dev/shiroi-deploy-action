@@ -9,11 +9,57 @@ on:
 
 env:
   PNPM_VERSION: 9.x.x
+  HASH_FILE: build_hash
 
 jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    if: ${{ github.event.head_commit.message != 'Update hash file' }}
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Read HASH_FILE content
+        id: read_hash
+        run: |
+          content=$(cat ${{ env.HASH_FILE }}) || true
+          echo "::set-output name=hash_content::$content"
+  check:
+    name: Check Should Rebuild
+    runs-on: ubuntu-latest
+    needs: prepare
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: innei-dev/shiroi
+          token: ${{ secrets.GH_PAT }} # `GH_PAT` is a secret that contains your PAT
+          fetch-depth: 0
+          lfs: true
+
+      - name: Use content from job1 and compare
+        run: |
+          file_hash="${{ needs.prepare.outputs.hash_content }}"
+          current_hash=$(git rev-parse --short "$GITHUB_SHA")
+          echo "File Hash: $file_hash"
+          echo "Current Git Hash: $current_hash"
+          if [ "$file_hash" == "$current_hash" ]; then
+            echo "Hashes match. Stopping workflow."
+            echo "::cancelWorkflow::Hashes are identical, stopping further actions."
+          else
+            echo "Hashes do not match. Continuing workflow."
+      - name: Continue with workflow
+        if: ${{ env.GITHUB_ACTION_STATUS != 'cancelled' }}
+        run: |
+          echo "This step runs only if the hashes do not match."
+
   build:
     name: Build artifact
     runs-on: ubuntu-latest
+    needs: prepare
 
     strategy:
       matrix:
@@ -25,6 +71,23 @@ jobs:
           token: ${{ secrets.GH_PAT }} # `GH_PAT` is a secret that contains your PAT
           fetch-depth: 0
           lfs: true
+
+      - name: Use content from job1 and compare
+        run: |
+          file_hash="${{ needs.prepare.outputs.hash_content }}"
+          current_hash=$(git rev-parse --short "$GITHUB_SHA")
+          echo "File Hash: $file_hash"
+          echo "Current Git Hash: $current_hash"
+          if [ "$file_hash" == "$current_hash" ]; then
+            echo "Hashes match. Stopping workflow."
+            echo "::cancelWorkflow::Hashes are identical, stopping further actions."
+          else
+            echo "Hashes do not match. Continuing workflow."
+      - name: Continue with workflow
+        if: ${{ env.GITHUB_ACTION_STATUS != 'cancelled' }}
+        run: |
+          echo "This step runs only if the hashes do not match."
+
       - name: Checkout LFS objects
         run: git lfs checkout
       - uses: pnpm/action-setup@v2
@@ -106,15 +169,23 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
       # Get the commit version from the build job
       - name: Use outputs from build
         run: |
           echo "SHA Short from build: ${{ needs.build.outputs.sha_short }}"
           echo "Branch from build: ${{ needs.build.outputs.branch }}"
       - name: Write hash to file
-        run: echo ${{ needs.build.outputs.sha_short }} > build_hash
-      - name: Push
-        uses: mikeal/publish-to-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH_NAME: main
+        run: echo ${{ needs.build.outputs.sha_short }} > ${{ env.HASH_FILE }}
+      - name: Commit files
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add ${{ env.HASH_FILE }}
+          git commit -a -m "Update hash file"
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}

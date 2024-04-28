@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.9.1
+        uses: styfle/cancel-workflow-action@0.12.1
       - name: Checkout
         uses: actions/checkout@v4
       - name: Read HASH_FILE content
@@ -50,7 +50,7 @@ jobs:
             echo "Hashes match. Stopping workflow."
             # echo "::cancelWorkflow::Hashes are identical, stopping further actions."
             # echo "::set-output name=canceled::true"
-            echo "canceled=true" >> "$GITHUB_OUTPUT"
+            echo "canceled=true" >> $GITHUB_OUTPUT
           else
             echo "Hashes do not match. Continuing workflow."
           fi
@@ -96,10 +96,9 @@ jobs:
 
       - name: Store artifact commit version
         shell: bash
-        id: set_vars
         run: |
-          echo "::set-output name=sha_short::$(git rev-parse --short "$GITHUB_SHA")"
-          echo "::set-output name=branch::$(echo ${GITHUB_REF#refs/heads/})"
+          echo "sha_short=$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_OUTPUT
+          echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
 
   deploy:
     name: Deploy artifact

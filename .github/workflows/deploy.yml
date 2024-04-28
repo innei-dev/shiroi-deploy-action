@@ -56,6 +56,7 @@ jobs:
         with:
           name: artifact
           github_token: ${{secrets.GH_PAT}}
+          search_artifacts: true
       - name: copy file via ssh password
         uses: appleboy/scp-action@v0.1.7
         with:

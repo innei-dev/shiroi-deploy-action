@@ -54,7 +54,7 @@ jobs:
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v3
         with:
-          name: artifact
+          # name: artifact
           github_token: ${{secrets.GH_PAT}}
           search_artifacts: true
           check_artifacts: true

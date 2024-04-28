@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action
+        uses: styfle/cancel-workflow-action@0.9.1
       - name: Checkout
         uses: actions/checkout@v4
       - name: Read HASH_FILE content

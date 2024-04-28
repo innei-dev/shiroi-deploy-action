@@ -80,6 +80,8 @@ jobs:
           port: ${{ secrets.PORT }}
           script_stop: true
           script: |
+            set -e
+            source $HOME/.bashrc
             mkdir -p $HOME/shiro
             mv /tmp/shiro/release.zip $HOME/shiro/release.zip
             rm -r /tmp/shiro

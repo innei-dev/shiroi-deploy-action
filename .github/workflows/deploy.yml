@@ -85,6 +85,7 @@ jobs:
             mkdir -p $HOME/shiro
             mv /tmp/shiro/release.zip $HOME/shiro/release.zip
             rm -r /tmp/shiro
+            cd $HOME/shiro
             unzip $HOME/shiro/release.zip
             cp $HOME/shiro/.env $HOME/shiro/standalone/.env
             export NEXT_SHARP_PATH=$(npm root -g)/sharp

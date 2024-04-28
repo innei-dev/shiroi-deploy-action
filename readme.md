@@ -1,0 +1,6 @@
+
+`HOST`
+`PASSWORD`
+`PORT`
+`KEY`
+`GH_PAT`

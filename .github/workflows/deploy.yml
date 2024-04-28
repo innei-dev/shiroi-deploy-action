@@ -87,7 +87,7 @@ jobs:
             rm -r /tmp/shiro
             cd $HOME/shiro
             # 其实用另一个临时文件去解压会更好，但是这里就这样了，后续可能会越来越大。
-            unzip $HOME/shiro/release.zip -o
+            unzip -o $HOME/shiro/release.zip
             cp $HOME/shiro/.env $HOME/shiro/standalone/.env
             export NEXT_SHARP_PATH=$(npm root -g)/sharp
             pm2 reload $HOME/shiro/standalone/ecosystem.config.js

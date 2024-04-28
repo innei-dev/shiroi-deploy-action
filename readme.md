@@ -6,7 +6,13 @@
 
 Shiroi 是 [Shiro](https://github.com/Innei/Shiro) 的闭源开发版本。
 
-和开源版本不同于部署方式，会更加繁琐。
+开源版本提供了预构建的 Docker 镜像或者编译产物可直接使用，但是闭源版本并没有提供。
+
+因为 Next.js build 需要大量内存，很多服务器并吃不消这样的开销。
+
+因此这里提供利用 GitHub Action 去完成构建然后推送到服务器。
+
+你可以使用定时任务去定时更新 Shiroi。
 
 ## How to
 

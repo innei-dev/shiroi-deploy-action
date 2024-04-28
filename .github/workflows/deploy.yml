@@ -99,8 +99,9 @@ jobs:
       - name: Store artifact commit version
         shell: bash
         run: |
-          echo "sha_short=$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_OUTPUT
-          echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+          git rev-parse --short ${{github.sha}}
+          echo "sha_short=$(git rev-parse --short ${{github.sha}})" >> "$GITHUB_OUTPUT"
+          echo "branch=${{github.ref	}}" >> "$GITHUB_OUTPUT"
 
   deploy:
     name: Deploy artifact

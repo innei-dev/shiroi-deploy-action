@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: '0 3 * * *'
 
 env:
   PNPM_VERSION: 9.x.x
@@ -54,9 +56,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: dist
-          # github_token: ${{secrets.GH_PAT}}
-          # search_artifacts: true
-          # check_artifacts: true
+
       - name: copy file via ssh password
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -67,3 +67,24 @@ jobs:
           port: ${{ secrets.PORT }}
           source: 'release.zip'
           target: '/tmp/shiro'
+
+      - name: Exec deploy script with SSH
+        uses: appleboy/ssh-action@master
+
+        with:
+          command_timeout: 5m
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          password: ${{ secrets.PASSWORD }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script_stop: true
+          script: |
+            mkdir -p $HOME/shiro
+            mv /tmp/shiro/release.zip $HOME/shiro/release.zip
+            rm -r /tmp/shiro
+            cp $HOME/shiro/.env $HOME/shiro/standalone/.env
+            export NEXT_SHARP_PATH=$(npm root -g)/sharp
+            pm2 reload $HOME/shiro/standalone/ecosystem.config.js
+            rm $HOME/shiro/release.zip
+            echo "Deployed successfully"

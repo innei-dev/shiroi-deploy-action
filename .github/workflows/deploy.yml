@@ -47,6 +47,13 @@ jobs:
           path: assets/release.zip
           retention-days: 7
 
+      - name: Store artifact commit version
+        shell: bash
+        id: set_vars
+        run: |
+          echo "::set-output name=sha_short::$(git rev-parse --short "$GITHUB_SHA")"
+          echo "::set-output name=branch::$(echo ${GITHUB_REF#refs/heads/})"
+
   deploy:
     name: Deploy artifact
     runs-on: ubuntu-latest
@@ -93,3 +100,21 @@ jobs:
             pm2 reload $HOME/shiro/standalone/ecosystem.config.js
             rm $HOME/shiro/release.zip
             echo "Deployed successfully"
+
+  store:
+    name: Store artifact commit version
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      # Get the commit version from the build job
+      - name: Use outputs from build
+        run: |
+          echo "SHA Short from build: ${{ needs.build.outputs.sha_short }}"
+          echo "Branch from build: ${{ needs.build.outputs.branch }}"
+      - name: Write hash to file
+        run: echo ${{ needs.build.outputs.sha_short }} > build_hash
+      - name: Push
+        uses: mikeal/publish-to-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_NAME: main

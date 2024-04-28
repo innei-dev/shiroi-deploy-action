@@ -137,16 +137,17 @@ jobs:
           script: |
             set -e
             source $HOME/.bashrc
-            mkdir -p $HOME/shiro
-            mv /tmp/shiro/release.zip $HOME/shiro/release.zip
+            workdir=$HOME/shiro/${{ github.run_number }}
+            mkdir -p $workdir
+            mv /tmp/shiro/release.zip $workdir/release.zip
             rm -r /tmp/shiro
-            cd $HOME/shiro
+            cd $workdir
             # 其实用另一个临时文件去解压会更好，但是这里就这样了，后续可能会越来越大。
-            unzip -o $HOME/shiro/release.zip
-            cp $HOME/shiro/.env $HOME/shiro/standalone/.env
+            unzip -o $workdir/release.zip
+            cp $HOME/shiro/.env $workdir/standalone/.env
             export NEXT_SHARP_PATH=$(npm root -g)/sharp
-            pm2 reload $HOME/shiro/standalone/ecosystem.config.js
-            rm $HOME/shiro/release.zip
+            pm2 reload $workdir/standalone/ecosystem.config.js
+            rm $workdir/release.zip
             echo "Deployed successfully"
 
   store:

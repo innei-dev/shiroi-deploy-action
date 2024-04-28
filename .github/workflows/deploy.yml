@@ -57,6 +57,7 @@ jobs:
           name: artifact
           github_token: ${{secrets.GH_PAT}}
           search_artifacts: true
+          check_artifacts: true
       - name: copy file via ssh password
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -65,5 +66,5 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
-          source: 'shiro-dist.zip'
+          source: 'release.zip'
           target: '/tmp/shiro'

@@ -53,7 +53,7 @@ jobs:
           FILE_HASH: ${{ needs.prepare.outputs.hash_content }}
         run: |
           file_hash=$FILE_HASH
-          current_hash=$(git rev-parse --short "$GITHUB_SHA")
+          current_hash=$(git rev-parse --short HEAD)
           echo "File Hash: $file_hash"
           echo "Current Git Hash: $current_hash"
           if [ "$file_hash" == "$current_hash" ]; then

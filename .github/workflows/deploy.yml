@@ -158,7 +158,8 @@ jobs:
             unzip -o $workdir/release.zip
             cp $HOME/shiro/.env $workdir/standalone/.env
             export NEXT_SHARP_PATH=$(npm root -g)/sharp
-            pm2 reload $workdir/standalone/ecosystem.config.js
+            # https://github.com/Unitech/pm2/issues/3054
+            pm2 stop $workdir/standalone/ecosystem.config.js && pm2 delete $workdir/standalone/ecosystem.config.js && pm2 start $workdir/standalone/ecosystem.config.js
             rm $workdir/release.zip
             echo "Deployed successfully"
 

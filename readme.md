@@ -26,6 +26,28 @@ npm i -g sharp
 
 sharp 不是必须的，但是在运行过程中会出现报错。参考：https://nextjs.org/docs/messages/sharp-missing-in-production
 
+在你的服务器家目录，新建 `shiro` 的目录，然后新建 `.env` 填写你的变量。
+
+```
+# Env from https://github.com/innei-dev/Shiroi/blob/main/.env.template
+NEXT_PUBLIC_API_URL=
+NEXT_PUBLIC_GATEWAY_URL=
+
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+
+## Clerk
+CLERK_SECRET_KEY=
+
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
+
+TMDB_API_KEY=
+
+GH_TOKEN=
+```
+
 Fork 此项目，然后你需要填写下面的信息。
 
 ## Secrets

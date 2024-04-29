@@ -31,7 +31,7 @@ jobs:
         id: read_hash
         run: |
           content=$(cat ${{ env.HASH_FILE }}) || true
-          echo "::set-output name=hash_content::$content"
+          echo "hash_content=$content" >> "$GITHUB_OUTPUT"
   check:
     name: Check Should Rebuild
     runs-on: ubuntu-latest
@@ -58,8 +58,6 @@ jobs:
           echo "Current Git Hash: $current_hash"
           if [ "$file_hash" == "$current_hash" ]; then
             echo "Hashes match. Stopping workflow."
-            # echo "::cancelWorkflow::Hashes are identical, stopping further actions."
-            # echo "::set-output name=canceled::true"
             echo "canceled=true" >> $GITHUB_OUTPUT
           else
             echo "Hashes do not match. Continuing workflow."
@@ -111,9 +109,10 @@ jobs:
         shell: bash
         id: store
         run: |
-          git rev-parse --short ${{github.sha}}
-          echo "sha_short=$(git rev-parse --short ${{github.sha}})" >> "$GITHUB_OUTPUT"
-          echo "branch=${{github.ref}}" >> "$GITHUB_OUTPUT"
+          sha_short=$(git rev-parse --short HEAD)
+          branch_name=$(git rev-parse --abbrev-ref HEAD)
+          echo "sha_short=$sha_short" >> "$GITHUB_OUTPUT"
+          echo "branch=$branch_name" >> "$GITHUB_OUTPUT"
 
   deploy:
     name: Deploy artifact

@@ -19,6 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.head_commit.message != 'Update hash file' }}
 
+    outputs:
+      hash_content: ${{ steps.read_hash.outputs.hash_content }}
+
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.12.1
@@ -33,6 +36,8 @@ jobs:
     name: Check Should Rebuild
     runs-on: ubuntu-latest
     needs: prepare
+    outputs:
+      canceled: ${{ steps.use_content.outputs.canceled }}
 
     steps:
       - uses: actions/checkout@v4
@@ -43,8 +48,11 @@ jobs:
           lfs: true
 
       - name: Use content from prev job and compare
+        id: use_content
+        env:
+          FILE_HASH: ${{ needs.prepare.outputs.hash_content }}
         run: |
-          file_hash="${{ needs.prepare.outputs.hash_content }}"
+          file_hash=$FILE_HASH
           current_hash=$(git rev-parse --short "$GITHUB_SHA")
           echo "File Hash: $file_hash"
           echo "Current Git Hash: $current_hash"
@@ -66,6 +74,9 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x]
+    outputs:
+      sha_short: ${{ steps.store.outputs.sha_short }}
+      branch: ${{ steps.store.outputs.branch }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -98,10 +109,11 @@ jobs:
 
       - name: Store artifact commit version
         shell: bash
+        id: store
         run: |
           git rev-parse --short ${{github.sha}}
           echo "sha_short=$(git rev-parse --short ${{github.sha}})" >> "$GITHUB_OUTPUT"
-          echo "branch=${{github.ref	}}" >> "$GITHUB_OUTPUT"
+          echo "branch=${{github.ref}}" >> "$GITHUB_OUTPUT"
 
   deploy:
     name: Deploy artifact
@@ -154,7 +166,7 @@ jobs:
   store:
     name: Store artifact commit version
     runs-on: ubuntu-latest
-    needs: deploy
+    needs: [deploy, build]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -163,11 +175,17 @@ jobs:
           fetch-depth: 0 # otherwise, you will failed to push refs to dest repo
       # Get the commit version from the build job
       - name: Use outputs from build
+        env:
+          SHA_SHORT: ${{ needs.build.outputs.sha_short }}
+          BRANCH: ${{ needs.build.outputs.branch }}
         run: |
-          echo "SHA Short from build: ${{ needs.build.outputs.sha_short }}"
-          echo "Branch from build: ${{ needs.build.outputs.branch }}"
+          echo "SHA Short from build: $SHA_SHORT"
+          echo "Branch from build: $BRANCH"
       - name: Write hash to file
-        run: echo ${{ needs.build.outputs.sha_short }} > ${{ env.HASH_FILE }}
+        env:
+          SHA_SHORT: ${{ needs.build.outputs.sha_short }}
+
+        run: echo $SHA_SHORT > ${{ env.HASH_FILE }}
       - name: Commit files
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"

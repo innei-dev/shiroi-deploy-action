@@ -64,3 +64,13 @@ Fork 此项目，然后你需要填写下面的信息。
 2. 进入 [tokens](https://github.com/settings/tokens) - Personal access tokens - Tokens (classic) - Generate new token - Generate new token (classic) 
 
 ![](https://github.com/innei-dev/shiroi-deploy-action/assets/41265413/e55d32cb-bd30-46b7-a603-7d00b3f8a413)
+
+
+## Tips
+
+为了让 PM2 在服务器重启之后能够还原进程。可以使用：
+
+```sh
+pm2 startup
+pm2 save
+```

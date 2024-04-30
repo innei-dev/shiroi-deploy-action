@@ -165,6 +165,7 @@ jobs:
             cd $workdir/standalone
             pm2 stop $workdir/standalone/ecosystem.config.js && pm2 delete $workdir/standalone/ecosystem.config.js && pm2 start $workdir/standalone/ecosystem.config.js
             rm $workdir/release.zip
+            pm2 save
             echo "Deployed successfully"
 
   store:

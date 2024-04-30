@@ -7,6 +7,9 @@ on:
   schedule:
     - cron: '0 3 * * *'
 
+  repository_dispatch:
+    types: [trigger-workflow]
+
 permissions: write-all
 
 env:
@@ -159,6 +162,7 @@ jobs:
             cp $HOME/shiro/.env $workdir/standalone/.env
             export NEXT_SHARP_PATH=$(npm root -g)/sharp
             # https://github.com/Unitech/pm2/issues/3054
+            cd $workdir/standalone
             pm2 stop $workdir/standalone/ecosystem.config.js && pm2 delete $workdir/standalone/ecosystem.config.js && pm2 start $workdir/standalone/ecosystem.config.js
             rm $workdir/release.zip
             echo "Deployed successfully"

@@ -98,6 +98,16 @@ jobs:
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ${{ github.workspace }}/.next/cache
+          # Generate a new cache whenever packages or source files change.
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          # If source files changed but packages didn't, rebuild from a prior cache.
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
       - name: Build project
         run: |
           sh ./ci-release-build.sh
@@ -107,7 +117,7 @@ jobs:
       #     name: dist
       #     path: assets/release.zip
       #     retention-days: 7
-      - name: Cache Primes
+      - name: Cache Build Artifacts
         id: cache-primes
         uses: actions/cache/save@v4
         with:
@@ -133,7 +143,7 @@ jobs:
       #   with:
       #     name: dist
 
-      - name: Restore cached Primes
+      - name: Restore cached Build Artifacts
         id: cache-primes-restore
         uses: actions/cache/restore@v4
         with:

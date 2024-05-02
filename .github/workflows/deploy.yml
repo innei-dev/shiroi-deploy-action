@@ -178,22 +178,27 @@ jobs:
           script: |
             set -e
             source $HOME/.bashrc
-            workdir=$HOME/shiro/${{ github.run_number }}
+            basedir=$HOME/shiro
+            workdir=$basedir/${{ github.run_number }}
             mkdir -p $workdir
             mv /tmp/shiro/release.zip $workdir/release.zip
             rm -r /tmp/shiro
             cd $workdir
-            # 其实用另一个临时文件去解压会更好，但是这里就这样了，后续可能会越来越大。
             unzip -o $workdir/release.zip
             cp $HOME/shiro/.env $workdir/standalone/.env
             export NEXT_SHARP_PATH=$(npm root -g)/sharp
+            # copy workdir ecosystem.config.js to basedir if not exists
+            if [ ! -f $basedir/ecosystem.config.js ]; then
+              cp $workdir/standalone/ecosystem.config.js $basedir/ecosystem.config.js
+            fi
             # https://github.com/Unitech/pm2/issues/3054
-            cd $workdir/standalone
-            pm2 stop $workdir/standalone/ecosystem.config.js && pm2 delete $workdir/standalone/ecosystem.config.js && pm2 start $workdir/standalone/ecosystem.config.js
+            # symlink workdir node entry file to basedir
+            ln -sf $workdir/standalone/server.js $basedir/server.js
+            cd $basedir
+            pm2 reload ecosystem.config.js --update-env
             rm $workdir/release.zip
             pm2 save
             echo "Deployed successfully"
-
   store:
     name: Store artifact commit version
     runs-on: ubuntu-latest

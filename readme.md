@@ -65,6 +65,9 @@ Fork 此项目，然后你需要填写下面的信息。
 
 ![](https://github.com/innei-dev/shiroi-deploy-action/assets/41265413/e55d32cb-bd30-46b7-a603-7d00b3f8a413)
 
+## Technical details
+
+参考：[跨仓库全自动构建项目并部署到服务器](./post.md)
 
 ## Tips
 

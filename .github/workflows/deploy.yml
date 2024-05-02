@@ -199,6 +199,12 @@ jobs:
             rm $workdir/release.zip
             pm2 save
             echo "Deployed successfully"
+
+      - name: After deploy script
+        run: |
+          hash=${{ needs.build.outputs.sha_short }}
+          # curl -X "POST" "https://innei.ren/api/v2/fn/shiro/new-version-hook" -H 'Content-Type: application/json' -d "{\"hash\": \"$hash\", \"key\": \"\"}"
+          ${{ secrets.AFTER_DEPLOY_SCRIPT }}
   store:
     name: Store artifact commit version
     runs-on: ubuntu-latest

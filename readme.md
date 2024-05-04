@@ -53,6 +53,7 @@ Fork 此项目，然后你需要填写下面的信息。
 ## Secrets
 
 - `HOST` 服务器地址
+- `USER` 服务器用户名
 - `PASSWORD` 服务器密码
 - `PORT` 服务器 SSH 端口
 - `KEY` 服务器 SSH Key（可选，密码 key 二选一）

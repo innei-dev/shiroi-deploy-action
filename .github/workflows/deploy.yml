@@ -181,6 +181,7 @@ jobs:
             basedir=$HOME/shiro
             workdir=$basedir/${{ github.run_number }}
             mkdir -p $workdir
+            mkdir -p $basedir/.cache
             mv /tmp/shiro/release.zip $workdir/release.zip
             rm -r /tmp/shiro
             cd $workdir
@@ -194,6 +195,8 @@ jobs:
             # https://github.com/Unitech/pm2/issues/3054
             # symlink workdir node entry file to basedir
             ln -sf $workdir/standalone/server.js $basedir/server.js
+            mkdir -p $workdir/standalone/.next/cache
+            ln -sf $basedir/.cache $workdir/standalone/.next/cache
             cd $basedir
             pm2 reload ecosystem.config.js --update-env
             rm $workdir/release.zip

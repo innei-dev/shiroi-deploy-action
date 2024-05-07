@@ -195,7 +195,8 @@ jobs:
             # https://github.com/Unitech/pm2/issues/3054
             # symlink workdir node entry file to basedir
             ln -sf $workdir/standalone/server.js $basedir/server.js
-            mkdir -p $workdir/standalone/.next/cache
+            mkdir -p $workdir/standalone/.next
+            rm -rf $workdir/standalone/.next/cache
             ln -sf $basedir/.cache $workdir/standalone/.next/cache
             cd $basedir
             pm2 reload ecosystem.config.js --update-env

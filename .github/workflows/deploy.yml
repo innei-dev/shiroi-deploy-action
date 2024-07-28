@@ -185,7 +185,8 @@ jobs:
             mv /tmp/shiro/release.zip $workdir/release.zip
             rm -r /tmp/shiro
             cd $workdir
-            unzip -o $workdir/release.zip
+            unzip -qq -o $workdir/release.zip
+            rm -rf $workdir/standalone/.env
             ln -s $HOME/shiro/.env $workdir/standalone/.env
             export NEXT_SHARP_PATH=$(npm root -g)/sharp
             # copy workdir ecosystem.config.js to basedir if not exists

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
   # schedule:
   #   - cron: '0 3 * * *'
 
@@ -168,6 +169,7 @@ jobs:
           port: ${{ secrets.PORT }}
           script_stop: true
           script: |
+            exec bash
             set -e
             source $HOME/.bashrc
             basedir=$HOME/shiro

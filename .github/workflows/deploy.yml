@@ -32,6 +32,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: hash-branch
       - name: Read HASH_FILE content
         id: read_hash
         run: |
@@ -212,6 +214,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: hash-branch
           persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
           fetch-depth: 0 # otherwise, you will failed to push refs to dest repo
       # Get the commit version from the build job
@@ -237,4 +240,4 @@ jobs:
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
+          branch: hash-branch

@@ -28,21 +28,35 @@ jobs:
 
     outputs:
       hash_content: ${{ steps.read_hash.outputs.hash_content }}
+      hash_branch_exists: ${{ steps.check_branch.outputs.hash_branch_exists }}
 
     steps:
+      - name: Check if hash-branch exists
+        id: check_branch
+        run: |
+          if git ls-remote --exit-code --heads origin hash-branch; then
+            echo "hash_branch_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hash_branch_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout
+        if: ${{ steps.check_branch.outputs.hash_branch_exists == 'true' }}
         uses: actions/checkout@v4
         with:
           ref: hash-branch
+
       - name: Read HASH_FILE content
         id: read_hash
         run: |
           content=$(cat ${{ env.HASH_FILE }}) || true
           echo "hash_content=$content" >> "$GITHUB_OUTPUT"
+
   check:
     name: Check Should Rebuild
     runs-on: ubuntu-latest
     needs: prepare
+    if: ${{ needs.prepare.outputs.hash_branch_exists == 'true' }}
     outputs:
       canceled: ${{ steps.use_content.outputs.canceled }}
 
@@ -74,7 +88,7 @@ jobs:
     name: Build artifact
     runs-on: ubuntu-latest
     needs: check
-    if: ${{needs.check.outputs.canceled != 'true'}}
+    if: ${{ needs.check.outputs.canceled != 'true' || needs.prepare.outputs.hash_branch_exists == 'false' }}
 
     strategy:
       matrix:

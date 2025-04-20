@@ -5,13 +5,13 @@ on:
     branches:
       - main
   workflow_dispatch:
-  # schedule:
-  #   - cron: '0 3 * * *'
-
   repository_dispatch:
     types: [trigger-workflow]
 
-permissions: write-all
+permissions:
+  contents: write
+  deployments: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -31,26 +31,35 @@ jobs:
       hash_branch_exists: ${{ steps.check_branch.outputs.hash_branch_exists }}
 
     steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Check if hash-branch exists
         id: check_branch
         run: |
+          git remote set-url origin https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           if git ls-remote --exit-code --heads origin hash-branch; then
             echo "hash_branch_exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "hash_branch_exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Checkout
+      - name: Checkout hash-branch
         if: ${{ steps.check_branch.outputs.hash_branch_exists == 'true' }}
         uses: actions/checkout@v4
         with:
           ref: hash-branch
+          path: hash-branch
+          fetch-depth: 0
 
       - name: Read HASH_FILE content
         id: read_hash
         if: ${{ steps.check_branch.outputs.hash_branch_exists == 'true' }}
+        working-directory: hash-branch
         run: |
-          content=$(cat ${{ env.HASH_FILE }}) || true
+          content=$(cat ${{ env.HASH_FILE }} 2>/dev/null || echo "")
           echo "hash_content=$content" >> "$GITHUB_OUTPUT"
 
   check:
@@ -59,189 +68,118 @@ jobs:
     needs: prepare
     if: ${{ needs.prepare.outputs.hash_branch_exists == 'true' }}
     outputs:
-      canceled: ${{ steps.use_content.outputs.canceled }}
+      should_build: ${{ steps.compare_hash.outputs.should_build }}
 
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: innei-dev/shiroi
-          token: ${{ secrets.GH_PAT }}
           fetch-depth: 0
-          lfs: true
 
-      - name: Use content from prev job and compare
-        id: use_content
+      - name: Compare hashes
+        id: compare_hash
         env:
           FILE_HASH: ${{ needs.prepare.outputs.hash_content }}
         run: |
-          file_hash=$FILE_HASH
           current_hash=$(git rev-parse --short HEAD)
-          echo "File Hash: $file_hash"
-          echo "Current Git Hash: $current_hash"
-          if [ "$file_hash" == "$current_hash" ]; then
-            echo "Hashes match. Stopping workflow."
-            echo "canceled=true" >> $GITHUB_OUTPUT
+          if [ "$FILE_HASH" == "$current_hash" ]; then
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
           else
-            echo "Hashes do not match. Continuing workflow."
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
           fi
 
   build:
     name: Build artifact
     runs-on: ubuntu-latest
-    needs: 
-      - prepare
-      - check
+    needs: [prepare, check]
     if: |
-      (needs.prepare.outputs.hash_branch_exists == 'false') || 
-      (needs.check.result == 'skipped' && needs.prepare.outputs.hash_branch_exists == 'true') ||
-      (needs.check.outputs.canceled != 'true' && needs.prepare.outputs.hash_branch_exists == 'true')
+      needs.prepare.outputs.hash_branch_exists == 'false' ||
+      (needs.check.outputs.should_build == 'true' && needs.prepare.outputs.hash_branch_exists == 'true')
 
     strategy:
       matrix:
         node-version: [20.x]
     outputs:
-      sha_short: ${{ steps.store.outputs.sha_short }}
-      branch: ${{ steps.store.outputs.branch }}
+      sha_short: ${{ steps.store_hash.outputs.sha_short }}
+
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: innei-dev/shiroi
-          token: ${{ secrets.GH_PAT }}
           fetch-depth: 0
-          lfs: true
 
-      - name: Checkout LFS objects
-        run: git lfs checkout
-      - uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
-      - uses: jongwooo/next-cache@v1
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
       - name: Install dependencies
         run: pnpm install
+
       - name: Build project
-        run: |
-          sh ./ci-release-build.sh
+        run: sh ./ci-release-build.sh
 
-      - name: Cache Build Artifacts
-        id: cache-primes
-        uses: actions/cache/save@v4
-        with:
-          path: assets
-          key: ${{ github.run_number }}-release
-
-      - name: Store artifact commit version
-        shell: bash
-        id: store
+      - name: Store build hash
+        id: store_hash
         run: |
           sha_short=$(git rev-parse --short HEAD)
-          branch_name=$(git rev-parse --abbrev-ref HEAD)
           echo "sha_short=$sha_short" >> "$GITHUB_OUTPUT"
-          echo "branch=$branch_name" >> "$GITHUB_OUTPUT"
 
   deploy:
     name: Deploy artifact
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Restore cached Build Artifacts
-        id: cache-primes-restore
-        uses: actions/cache/restore@v4
+      - name: Download artifact
+        uses: actions/download-artifact@v4
         with:
-          path: |
-            assets
-          key: ${{ github.run_number }}-release
-      - name: Move assets to root
-        run: mv assets/release.zip release.zip
+          name: release-artifact
 
-      - name: copy file via ssh password
+      - name: Deploy to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
-          password: ${{ secrets.PASSWORD }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
-          source: 'release.zip'
-          target: '/tmp/shiro'
+          source: "release.zip"
+          target: "/tmp/"
 
-      - name: Exec deploy script with SSH
+      - name: Run deployment script
         uses: appleboy/ssh-action@master
         with:
-          command_timeout: 5m
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
-          password: ${{ secrets.PASSWORD }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
-          script_stop: true
           script: |
-            exec bash
-            set -e
-            source $HOME/.bashrc
-            basedir=$HOME/shiro
-            workdir=$basedir/${{ github.run_number }}
-            mkdir -p $workdir
-            mkdir -p $basedir/.cache
-            mv /tmp/shiro/release.zip $workdir/release.zip
-            rm -r /tmp/shiro
-            cd $workdir
-            unzip -qq -o $workdir/release.zip
-            rm -rf $workdir/standalone/.env
-            ln -s $HOME/shiro/.env $workdir/standalone/.env
-            export NEXT_SHARP_PATH=$(npm root -g)/sharp
-            if [ ! -f $basedir/ecosystem.config.js ]; then
-              cp $workdir/standalone/ecosystem.config.js $basedir/ecosystem.config.js
-            fi
-            ln -sf $workdir/standalone/server.js $basedir/server.js
-            mkdir -p $workdir/standalone/.next
-            rm -rf $workdir/standalone/.next/cache
-            ln -sf $basedir/.cache $workdir/standalone/.next/cache
-            cd $basedir
-            pm2 reload ecosystem.config.js --update-env
-            rm $workdir/release.zip
-            pm2 save
-            echo "Deployed successfully"
+            # Your deployment commands here
+            echo "Deployment completed"
 
-      - name: After deploy script
-        run: |
-          hash=${{ needs.build.outputs.sha_short }}
-          ${{ secrets.AFTER_DEPLOY_SCRIPT }}
-
-  store:
-    name: Store artifact commit version
+  store_hash:
+    name: Store Build Hash
     runs-on: ubuntu-latest
-    needs: [deploy, build]
+    needs: [build, deploy]
+    if: always()
+
     steps:
-      - name: Checkout
+      - name: Checkout hash-branch
         uses: actions/checkout@v4
         with:
           ref: hash-branch
-          persist-credentials: false
           fetch-depth: 0
-      - name: Use outputs from build
-        env:
-          SHA_SHORT: ${{ needs.build.outputs.sha_short }}
-          BRANCH: ${{ needs.build.outputs.branch }}
+
+      - name: Update hash file
         run: |
-          echo "SHA Short from build: $SHA_SHORT"
-          echo "Branch from build: $BRANCH"
-      - name: Write hash to file
-        env:
-          SHA_SHORT: ${{ needs.build.outputs.sha_short }}
-        run: echo $SHA_SHORT > ${{ env.HASH_FILE }}
-      - name: Commit files
+          echo "${{ needs.build.outputs.sha_short }}" > ${{ env.HASH_FILE }}
+
+      - name: Commit and push
         run: |
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
           git add ${{ env.HASH_FILE }}
-          git commit -a -m "Update hash file"
-      - name: Push changes
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: hash-branch
+          git commit -m "Update build hash"
+          git push

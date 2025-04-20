@@ -8,9 +8,7 @@ on:
   repository_dispatch:
     types: [trigger-workflow]
 
-permissions:
-  contents: write
-  deployments: write
+permissions: write-all
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -132,6 +130,13 @@ jobs:
       - name: Build project
         run: sh ./ci-release-build.sh
 
+      - name: Cache Build Artifacts
+        id: cache-primes
+        uses: actions/cache/save@v4
+        with:
+          path: assets
+          key: ${{ github.run_number }}-release
+
       - name: Store build hash
         id: store_hash
         run: |
@@ -143,32 +148,68 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
+      - name: Restore cached Build Artifacts
+        id: cache-primes-restore
+        uses: actions/cache/restore@v4
         with:
-          name: release-artifact
+          path: |
+            assets
+          key: ${{ github.run_number }}-release
+      
+      - name: Move assets to root
+        run: mv assets/release.zip release.zip
 
-      - name: Deploy to server
+      - name: copy file via ssh password
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
+          password: ${{ secrets.PASSWORD }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
-          source: "release.zip"
-          target: "/tmp/"
+          source: 'release.zip'
+          target: '/tmp/shiro'
 
-      - name: Run deployment script
+      - name: Exec deploy script with SSH
         uses: appleboy/ssh-action@master
         with:
+          command_timeout: 5m
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
+          password: ${{ secrets.PASSWORD }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
+          script_stop: true
           script: |
-            # Your deployment commands here
-            echo "Deployment completed"
-
+            exec bash
+            set -e
+            source $HOME/.bashrc
+            basedir=$HOME/shiro
+            workdir=$basedir/${{ github.run_number }}
+            mkdir -p $workdir
+            mkdir -p $basedir/.cache
+            mv /tmp/shiro/release.zip $workdir/release.zip
+            rm -r /tmp/shiro
+            cd $workdir
+            unzip -qq -o $workdir/release.zip
+            rm -rf $workdir/standalone/.env
+            ln -s $HOME/shiro/.env $workdir/standalone/.env
+            export NEXT_SHARP_PATH=$(npm root -g)/sharp
+            # copy workdir ecosystem.config.js to basedir if not exists
+            if [ ! -f $basedir/ecosystem.config.js ]; then
+              cp $workdir/standalone/ecosystem.config.js $basedir/ecosystem.config.js
+            fi
+            # https://github.com/Unitech/pm2/issues/3054
+            # symlink workdir node entry file to basedir
+            ln -sf $workdir/standalone/server.js $basedir/server.js
+            mkdir -p $workdir/standalone/.next
+            rm -rf $workdir/standalone/.next/cache
+            ln -sf $basedir/.cache $workdir/standalone/.next/cache
+            cd $basedir
+            pm2 reload ecosystem.config.js --update-env
+            rm $workdir/release.zip
+            pm2 save
+            echo "Deployed successfully"
   store_hash:
     name: Store Build Hash
     runs-on: ubuntu-latest

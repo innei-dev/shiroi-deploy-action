@@ -48,6 +48,7 @@ jobs:
 
       - name: Read HASH_FILE content
         id: read_hash
+        if: ${{ steps.check_branch.outputs.hash_branch_exists == 'true' }}
         run: |
           content=$(cat ${{ env.HASH_FILE }}) || true
           echo "hash_content=$content" >> "$GITHUB_OUTPUT"
@@ -64,7 +65,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: innei-dev/shiroi
-          token: ${{ secrets.GH_PAT }} # `GH_PAT` is a secret that contains your PAT
+          token: ${{ secrets.GH_PAT }}
           fetch-depth: 0
           lfs: true
 
@@ -87,8 +88,13 @@ jobs:
   build:
     name: Build artifact
     runs-on: ubuntu-latest
-    needs: check
-    if: ${{ needs.check.outputs.canceled != 'true' || needs.prepare.outputs.hash_branch_exists == 'false' }}
+    needs: 
+      - prepare
+      - check
+    if: |
+      (needs.prepare.outputs.hash_branch_exists == 'false') || 
+      (needs.check.result == 'skipped' && needs.prepare.outputs.hash_branch_exists == 'true') ||
+      (needs.check.outputs.canceled != 'true' && needs.prepare.outputs.hash_branch_exists == 'true')
 
     strategy:
       matrix:
@@ -100,7 +106,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: innei-dev/shiroi
-          token: ${{ secrets.GH_PAT }} # `GH_PAT` is a secret that contains your PAT
+          token: ${{ secrets.GH_PAT }}
           fetch-depth: 0
           lfs: true
 
@@ -121,11 +127,6 @@ jobs:
         run: |
           sh ./ci-release-build.sh
 
-      # - uses: actions/upload-artifact@v4
-      #   with:
-      #     name: dist
-      #     path: assets/release.zip
-      #     retention-days: 7
       - name: Cache Build Artifacts
         id: cache-primes
         uses: actions/cache/save@v4
@@ -147,11 +148,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      # - name: Download artifact
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: dist
-
       - name: Restore cached Build Artifacts
         id: cache-primes-restore
         uses: actions/cache/restore@v4
@@ -175,7 +171,6 @@ jobs:
 
       - name: Exec deploy script with SSH
         uses: appleboy/ssh-action@master
-
         with:
           command_timeout: 5m
           host: ${{ secrets.HOST }}
@@ -199,12 +194,9 @@ jobs:
             rm -rf $workdir/standalone/.env
             ln -s $HOME/shiro/.env $workdir/standalone/.env
             export NEXT_SHARP_PATH=$(npm root -g)/sharp
-            # copy workdir ecosystem.config.js to basedir if not exists
             if [ ! -f $basedir/ecosystem.config.js ]; then
               cp $workdir/standalone/ecosystem.config.js $basedir/ecosystem.config.js
             fi
-            # https://github.com/Unitech/pm2/issues/3054
-            # symlink workdir node entry file to basedir
             ln -sf $workdir/standalone/server.js $basedir/server.js
             mkdir -p $workdir/standalone/.next
             rm -rf $workdir/standalone/.next/cache
@@ -218,8 +210,8 @@ jobs:
       - name: After deploy script
         run: |
           hash=${{ needs.build.outputs.sha_short }}
-          # curl -X "POST" "https://mx.innei.in/api/v2/fn/shiro/new-version-hook" -H 'Content-Type: application/json' -d "{\"hash\": \"$hash\", \"key\": \"\"}"
           ${{ secrets.AFTER_DEPLOY_SCRIPT }}
+
   store:
     name: Store artifact commit version
     runs-on: ubuntu-latest
@@ -229,9 +221,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: hash-branch
-          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
-          fetch-depth: 0 # otherwise, you will failed to push refs to dest repo
-      # Get the commit version from the build job
+          persist-credentials: false
+          fetch-depth: 0
       - name: Use outputs from build
         env:
           SHA_SHORT: ${{ needs.build.outputs.sha_short }}
@@ -242,7 +233,6 @@ jobs:
       - name: Write hash to file
         env:
           SHA_SHORT: ${{ needs.build.outputs.sha_short }}
-
         run: echo $SHA_SHORT > ${{ env.HASH_FILE }}
       - name: Commit files
         run: |

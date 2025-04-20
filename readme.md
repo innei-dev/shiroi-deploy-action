@@ -48,7 +48,8 @@ TMDB_API_KEY=
 GH_TOKEN=
 ```
 
-Fork 此项目，然后你需要填写下面的信息。
+Fork 此项目(仅fork主分支)，然后创建一个新分支:`hash-branch`
+然后你需要填写下面的信息。
 
 ## Secrets
 

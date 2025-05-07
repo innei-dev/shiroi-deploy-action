@@ -169,6 +169,8 @@ jobs:
           script_stop: true
           script: |
             set -e
+            export NVM_DIR=~/.nvm #定义.nvm的安装目录，否则终端运行时明明安装了但找不到命令
+            source ~/.nvm/nvm.sh #识别nvm命令，否则可能会报command not found
             source $HOME/.bashrc
             basedir=$HOME/shiro
             workdir=$basedir/${{ github.run_number }}

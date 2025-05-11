@@ -58,8 +58,6 @@ jobs:
       - name: Checkout LFS objects
         run: git lfs checkout
       - uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
@@ -304,7 +302,7 @@ on:
 permissions: write-all
 
 env:
-  PNPM_VERSION: 9.x.x
+  
   HASH_FILE: build_hash
 
 jobs:

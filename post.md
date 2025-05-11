@@ -58,8 +58,6 @@ jobs:
       - name: Checkout LFS objects
         run: git lfs checkout
       - uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
@@ -304,7 +302,7 @@ fi
 上面的脚本由 GPT-4 编写，经过测试可用。
 
 ```sh
-~/shiro$ bash rollback.sh 
+~/shiro$ bash rollback.sh
 请选择一个文件夹进行操作：
  1) 56
  2) 53
@@ -427,7 +425,6 @@ on:
 permissions: write-all
 
 env:
-  PNPM_VERSION: 9.x.x
   HASH_FILE: build_hash
 
 jobs:

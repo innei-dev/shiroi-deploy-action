@@ -175,8 +175,8 @@ jobs:
             rm -r /tmp/shiro
             cd $workdir
             unzip -qq -o $workdir/release.zip
-            rm -rf $workdir/standalone/.env
-            ln -s $HOME/shiro/.env $workdir/standalone/.env
+            rm -rf $workdir/standalone/apps/web/.env
+            ln -s $HOME/shiro/.env $workdir/standalone/apps/web/.env
             export NEXT_SHARP_PATH=$(npm root -g)/sharp
             # copy workdir ecosystem.config.js to basedir if not exists
             if [ ! -f $basedir/ecosystem.config.js ]; then
@@ -184,10 +184,10 @@ jobs:
             fi
             # https://github.com/Unitech/pm2/issues/3054
             # symlink workdir node entry file to basedir
-            ln -sf $workdir/standalone/server.js $basedir/server.js
-            mkdir -p $workdir/standalone/.next
-            rm -rf $workdir/standalone/.next/cache
-            ln -sf $basedir/.cache $workdir/standalone/.next/cache
+            ln -sf $workdir/standalone/apps/web/server.js $basedir/server.js
+            mkdir -p $workdir/standalone/apps/web/.next
+            rm -rf $workdir/standalone/apps/web/.next/cache
+            ln -sf $basedir/.cache $workdir/standalone/apps/web/.next/cache
             cd $basedir
             pm2 reload ecosystem.config.js --update-env
             rm $workdir/release.zip

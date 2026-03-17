@@ -356,7 +356,7 @@ jobs:
       - name: Trigger Workflow in Another Repository
         run: |
           repo_owner="innei-dev"
-          repo_name="shiroi-deploy-action"
+          repo_name="yohaku-deploy-action"
           event_type="trigger-workflow"
 
           curl -L \
@@ -543,4 +543,4 @@ on:
 
 完整的配置在这里：
 
-https://github.com/innei-dev/shiroi-deploy-action
+https://github.com/innei-dev/yohaku-deploy-action

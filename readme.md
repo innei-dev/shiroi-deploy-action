@@ -64,7 +64,7 @@ Fork 此项目，然后你需要填写下面的信息。
 1. 你的账号可以访问 Shiroi 仓库。
 2. 进入 [tokens](https://github.com/settings/tokens) - Personal access tokens - Tokens (classic) - Generate new token - Generate new token (classic) 
 
-![](https://github.com/innei-dev/shiroi-deploy-action/assets/41265413/e55d32cb-bd30-46b7-a603-7d00b3f8a413)
+![](https://github.com/innei-dev/yohaku-deploy-action/assets/41265413/e55d32cb-bd30-46b7-a603-7d00b3f8a413)
 
 ## Technical details
 

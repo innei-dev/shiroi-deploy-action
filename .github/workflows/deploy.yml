@@ -133,6 +133,8 @@ jobs:
       #   with:
       #     name: dist
 
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Restore cached Build Artifacts
         id: cache-primes-restore
         uses: actions/cache/restore@v4
@@ -144,7 +146,7 @@ jobs:
         run: mv assets/release.zip release.zip
 
       - name: Prepare standalone PM2 config
-        run: cp ${{ github.workspace }}/pm2/ecosystem.config.js ${{ github.workspace }}/ecosystem.config.js
+        run: cp pm2/ecosystem.config.js ecosystem.config.js
 
       - name: copy file via ssh password
         uses: appleboy/scp-action@v0.1.7

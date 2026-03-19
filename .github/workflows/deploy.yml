@@ -1,6 +1,7 @@
 name: Build and Deploy
 
 on:
+  workflow_dispatch: #增加了工作流的手动运行
   push:
     branches:
       - main

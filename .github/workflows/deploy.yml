@@ -133,8 +133,6 @@ jobs:
       #   with:
       #     name: dist
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
       - name: Restore cached Build Artifacts
         id: cache-primes-restore
         uses: actions/cache/restore@v4
@@ -183,7 +181,7 @@ jobs:
           script: |
             set -e
             source $HOME/.bashrc
-            basedir=/root/mx-space/shiro
+            basedir=$HOME/shiro
             workdir=$basedir/${{ github.run_number }}
             mkdir -p $workdir
             mkdir -p $basedir/.cache

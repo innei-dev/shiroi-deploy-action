@@ -144,7 +144,7 @@ jobs:
         run: mv assets/release.zip release.zip
 
       - name: Prepare standalone PM2 config
-        run: cp pm2/ecosystem.config.js ecosystem.config.js
+        run: cp ${{ github.workspace }}/pm2/ecosystem.config.js ${{ github.workspace }}/ecosystem.config.js
 
       - name: copy file via ssh password
         uses: appleboy/scp-action@v0.1.7

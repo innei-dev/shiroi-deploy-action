@@ -133,6 +133,12 @@ jobs:
       #   with:
       #     name: dist
 
+      - name: Checkout only pm2 config
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            pm2
+          sparse-checkout-cone-mode: false
       - name: Restore cached Build Artifacts
         id: cache-primes-restore
         uses: actions/cache/restore@v4
@@ -143,6 +149,8 @@ jobs:
       - name: Move assets to root
         run: mv assets/release.zip release.zip
 
+      - name: Prepare standalone PM2 config
+        run: cp pm2/ecosystem.config.js ecosystem.config.js
 
       - name: copy file via ssh password
         uses: appleboy/scp-action@v0.1.7

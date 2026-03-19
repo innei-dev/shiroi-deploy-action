@@ -181,7 +181,7 @@ jobs:
           script: |
             set -e
             source $HOME/.bashrc
-            basedir=$HOME/shiro
+            basedir=/root/mx-space/shiro
             workdir=$basedir/${{ github.run_number }}
             mkdir -p $workdir
             mkdir -p $basedir/.cache

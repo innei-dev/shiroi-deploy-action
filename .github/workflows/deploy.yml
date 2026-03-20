@@ -198,7 +198,7 @@ jobs:
             unzip -qq -o $workdir/release.zip
             rm -r /tmp/shiro
             rm -rf $workdir/standalone/apps/web/.env
-            ln -s $HOME/mx-space/shiro/.env $workdir/standalone/.env $workdir/standalone/apps/web/.env
+            ln -s $HOME/mx-space/shiro/.env $workdir/standalone/apps/web/.env
             export NEXT_SHARP_PATH=$(npm root -g)/sharp
             # https://github.com/Unitech/pm2/issues/3054
             # symlink workdir node entry file to basedir

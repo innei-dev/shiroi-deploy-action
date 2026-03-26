@@ -54,6 +54,17 @@ GH_TOKEN=
 
 Fork 此项目，然后你需要填写下面的信息。
 
+## CI 构建与 `NEXT_PUBLIC_*` 环境变量
+
+工作流在 GitHub Actions 里执行 `next build` 时，会通过仓库 **Secrets** 注入 `NEXT_PUBLIC_API_URL` 与 `NEXT_PUBLIC_GATEWAY_URL`。请与服务器上 `~/shiro/.env` 中的取值保持一致。
+
+私有站点侧若采用 **ISR**（Incremental Static Regeneration，增量静态再生成），构建期或再验证路径往往会按这些地址请求后端；`NEXT_PUBLIC_*` 又会在编译阶段写入客户端 bundle。若 CI 未传入或传错，预渲染/ISR 页面可能出现错误的 API 端点或运行期行为异常。因此这两个变量是 **`next build` 的必配项**，不能只依赖部署机上的 `.env` 而忽略 Actions 配置。
+
+在仓库 **Settings → Secrets and variables → Actions** 中新增：
+
+- `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_GATEWAY_URL`
+
 ## Secrets
 
 - `HOST` 服务器地址
@@ -62,6 +73,7 @@ Fork 此项目，然后你需要填写下面的信息。
 - `PORT` 服务器 SSH 端口
 - `KEY` 服务器 SSH Key（可选，密码 key 二选一）
 - `GH_PAT` 可访问当前私有源码仓库的 Github Token
+- `NEXT_PUBLIC_API_URL` 与 `NEXT_PUBLIC_GATEWAY_URL` 供 CI 构建注入（见上一节；需与服务器 `.env` 一致）
 
 ### Github Token
 

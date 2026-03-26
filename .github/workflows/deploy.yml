@@ -99,6 +99,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Build project
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_GATEWAY_URL: ${{ secrets.NEXT_PUBLIC_GATEWAY_URL }}
         run: |
           sh ./ci-release-build.sh
 

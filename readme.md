@@ -34,6 +34,8 @@ sharp 不是必须的，但是在运行过程中会出现报错。参考：https
 
 ```
 # Env from your private Yohaku/Shiroi repo .env.template
+BASE_URL=
+
 NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_GATEWAY_URL=
 
@@ -54,14 +56,16 @@ GH_TOKEN=
 
 Fork 此项目，然后你需要填写下面的信息。
 
-## CI 构建与 `NEXT_PUBLIC_*` 环境变量
+## CI 构建与站点 URL 环境变量
 
-工作流在 GitHub Actions 里执行 `next build` 时，会通过仓库 **Secrets** 注入 `NEXT_PUBLIC_API_URL` 与 `NEXT_PUBLIC_GATEWAY_URL`。请与服务器上 `~/shiro/.env` 中的取值保持一致。
+工作流在 GitHub Actions 里执行 `next build` 时，会通过仓库 **Secrets** 注入 `BASE_URL`、`NEXT_PUBLIC_API_URL` 与 `NEXT_PUBLIC_GATEWAY_URL`，须与服务器 `~/shiro/.env`（及私有仓库 `Dockerfile` / 模板）一致。
 
-私有站点侧若采用 **ISR**（Incremental Static Regeneration，增量静态再生成），构建期或再验证路径往往会按这些地址请求后端；`NEXT_PUBLIC_*` 又会在编译阶段写入客户端 bundle。若 CI 未传入或传错，预渲染/ISR 页面可能出现错误的 API 端点或运行期行为异常。因此这两个变量是 **`next build` 的必配项**，不能只依赖部署机上的 `.env` 而忽略 Actions 配置。
+- **`BASE_URL`**：站点对外根 URL（无尾部斜杠为宜），例如 `https://example.com`。与私有镜像构建阶段一致：`Dockerfile` 中常用 `ARG BASE_URL`，并令 `NEXT_PUBLIC_GATEWAY_URL=${BASE_URL}`、`NEXT_PUBLIC_API_URL=${BASE_URL}/api/v2`。
+- **`NEXT_PUBLIC_*`**：直接参与 `next build` 与客户端 bundle；若启用 **ISR**，构建期/再验证会依赖正确端点，不能只依赖部署机 `.env` 而忽略 Actions。
 
 在仓库 **Settings → Secrets and variables → Actions** 中新增：
 
+- `BASE_URL`
 - `NEXT_PUBLIC_API_URL`
 - `NEXT_PUBLIC_GATEWAY_URL`
 
@@ -73,7 +77,7 @@ Fork 此项目，然后你需要填写下面的信息。
 - `PORT` 服务器 SSH 端口
 - `KEY` 服务器 SSH Key（可选，密码 key 二选一）
 - `GH_PAT` 可访问当前私有源码仓库的 Github Token
-- `NEXT_PUBLIC_API_URL` 与 `NEXT_PUBLIC_GATEWAY_URL` 供 CI 构建注入（见上一节；需与服务器 `.env` 一致）
+- `BASE_URL`、`NEXT_PUBLIC_API_URL`、`NEXT_PUBLIC_GATEWAY_URL` 供 CI 构建注入（见上一节；需与服务器 `.env` 一致）
 
 ### Github Token
 

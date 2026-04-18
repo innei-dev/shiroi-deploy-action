@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'Shiroi',
+      name: 'Yohaku',
       script: './server.js',
       cwd: __dirname,
       exec_mode: 'fork',

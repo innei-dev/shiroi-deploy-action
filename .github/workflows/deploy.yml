@@ -17,6 +17,9 @@ concurrency:
 
 env:
   HASH_FILE: build_hash
+  SOURCE_REPO: innei-dev/Yohaku
+  BUILD_COMMAND: pnpm --filter @yohaku/web build:ci
+  STANDALONE_SUBPATH: standalone/apps/web
 
 jobs:
   prepare:
@@ -81,7 +84,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: innei-dev/Yohaku
+          repository: ${{ env.SOURCE_REPO }}
           token: ${{ secrets.GH_PAT }} # `GH_PAT` is a secret that contains your PAT
           fetch-depth: 0
           lfs: true
@@ -104,7 +107,17 @@ jobs:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
           NEXT_PUBLIC_GATEWAY_URL: ${{ secrets.NEXT_PUBLIC_GATEWAY_URL }}
         run: |
-          sh ./ci-release-build.sh
+          ${{ env.BUILD_COMMAND }}
+          cd apps/web/.next
+          rm -rf cache
+          cp -r ../public ./standalone/public
+          mv ./static ./standalone/apps/web/.next/static
+          cd ./standalone
+          echo ';process.title = "Yohaku (NextJS)"' >> server.js
+          cd "$GITHUB_WORKSPACE"
+          mkdir -p assets
+          rm -f assets/release.zip
+          (cd apps/web/.next && zip --symlinks -r "$GITHUB_WORKSPACE/assets/release.zip" ./* -x "dev/*" -x "cache/*")
 
       # - uses: actions/upload-artifact@v4
       #   with:
@@ -159,7 +172,7 @@ jobs:
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
           source: 'release.zip'
-          target: '/tmp/shiro'
+          target: '/tmp/yohaku'
 
       - name: copy PM2 config via ssh password
         uses: appleboy/scp-action@v0.1.7
@@ -170,7 +183,7 @@ jobs:
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
           source: 'ecosystem.config.js'
-          target: '/tmp/shiro'
+          target: '/tmp/yohaku'
 
       - name: Exec deploy script with SSH
         uses: appleboy/ssh-action@master
@@ -185,26 +198,26 @@ jobs:
           script: |
             set -e
             source $HOME/.bashrc
-            basedir=$HOME/shiro
+            basedir=$HOME/yohaku
             workdir=$basedir/${{ github.run_number }}
             mkdir -p $workdir
             mkdir -p $basedir/.cache
-            mv /tmp/shiro/release.zip $workdir/release.zip
-            install -m 644 /tmp/shiro/ecosystem.config.js $basedir/ecosystem.config.js
+            mv /tmp/yohaku/release.zip $workdir/release.zip
+            install -m 644 /tmp/yohaku/ecosystem.config.js $basedir/ecosystem.config.js
             cd $workdir
             unzip -qq -o $workdir/release.zip
-            rm -r /tmp/shiro
-            rm -rf $workdir/standalone/apps/web/.env
-            ln -s $HOME/shiro/.env $workdir/standalone/apps/web/.env
+            rm -r /tmp/yohaku
+            rm -rf $workdir/${{ env.STANDALONE_SUBPATH }}/.env
+            ln -s $HOME/yohaku/.env $workdir/${{ env.STANDALONE_SUBPATH }}/.env
             export NEXT_SHARP_PATH=$(npm root -g)/sharp
             # https://github.com/Unitech/pm2/issues/3054
             # symlink workdir node entry file to basedir
-            ln -sf $workdir/standalone/apps/web/server.js $basedir/server.js
-            mkdir -p $workdir/standalone/apps/web/.next
-            rm -rf $workdir/standalone/apps/web/.next/cache
-            ln -sf $basedir/.cache $workdir/standalone/apps/web/.next/cache
+            ln -sf $workdir/${{ env.STANDALONE_SUBPATH }}/server.js $basedir/server.js
+            mkdir -p $workdir/${{ env.STANDALONE_SUBPATH }}/.next
+            rm -rf $workdir/${{ env.STANDALONE_SUBPATH }}/.next/cache
+            ln -sf $basedir/.cache $workdir/${{ env.STANDALONE_SUBPATH }}/.next/cache
             cd $basedir
-            if pm2 describe Shiroi >/dev/null 2>&1; then
+            if pm2 describe Yohaku >/dev/null 2>&1; then
               pm2 reload ecosystem.config.js --update-env
             else
               pm2 start ecosystem.config.js --update-env

@@ -66,9 +66,21 @@ Fork 此项目，然后你需要填写下面的信息。
 
 ## 历史版本参考
 
-如果你需要查看或回退到**旧版 Shiroi** 的部署配置，可参考以下历史 commit：
+如果你需要**部署旧版 Shiroi**，可直接回退到以下历史 commit，或参考当时的配置自行修改：
 
-- **[`bc07cfa`](https://github.com/innei-dev/yohaku-deploy-action/commit/bc07cfa)** —— PR #17 之前的最后一个版本，仍使用 `innei-dev/shiroi` 作为默认源码仓库，部署目录为 `~/shiro`，PM2 应用名为 `Shiroi`。
+| Commit | 说明 | 适用场景 |
+|--------|------|----------|
+| [`bc07cfa`](https://github.com/innei-dev/yohaku-deploy-action/commit/bc07cfa) | **PR #17 之前最后一个 Shiroi 版本**。默认源码仓库为 `innei-dev/shiroi`，部署目录 `~/shiro`，PM2 应用名 `Shiroi`，构建命令为 `sh ./ci-release-build.sh`。 | **推荐**：如果你只想直接使用旧版 Shiroi 的完整配置。 |
+| [`80466cf`](https://github.com/innei-dev/yohaku-deploy-action/commit/80466cf) | standalone + PM2 部署流程修复后的版本。引入了 `pm2/ecosystem.config.js` 模板，部署路径对齐为 `standalone/apps/web`。 | 如果你需要 standalone 部署模式的修复版本。 |
+| [`d495fef`](https://github.com/innei-dev/yohaku-deploy-action/commit/d495fef) | 最初加入 `rollback.sh` 的版本。 | 如果你想看最早的部署脚本实现。 |
+
+直接切换到 Shiroi 最后一个可用版本：
+
+```bash
+git clone https://github.com/innei-dev/yohaku-deploy-action.git
+cd yohaku-deploy-action
+git checkout bc07cfa
+```
 
 ---
 
